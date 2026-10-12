@@ -1,0 +1,1 @@
+No pude conectar a sql debido a que me daba error, verifique que todos los archivos necesarios estuvieran instalados y no funciono, dejo una captura del error <img width="870" height="332" alt="Captura de pantalla 2026-10-11 184334" src="https://github.com/user-attachments/assets/4f02f4d6-c77b-4aeb-b5d2-06de0c4d177e" />
