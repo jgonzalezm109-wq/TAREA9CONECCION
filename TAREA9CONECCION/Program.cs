@@ -1,167 +1,116 @@
-﻿using Microsoft.Data.SqlClient;
-using SistemaGastos;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace RegistroGastos
+class Program
 {
-    class Program
+    
+    private static List<Gasto> listaGastos = new List<Gasto>();
+    private static int contadorId = 1;
+
+    static void Main(string[] args)
     {
-        static string cadenaConexion = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=GastosBD;Integrated Security=True;TrustServerCertificate=True;";
-
-        public static void Main(string[] args)
+        int opcion;
+        do
         {
-            string opcion;
+            Console.Clear();
+            Console.WriteLine("=== SISTEMA DE GESTIÓN DE GASTOS (Modo Memoria) ===");
+            Console.WriteLine("1. Registrar nuevo gasto");
+            Console.WriteLine("2. Listar todos los gastos");
+            Console.WriteLine("3. Ver total gastado");
+            Console.WriteLine("4. Salir");
+            Console.Write("\nSelecciona una opción: ");
 
-            do
+            if (int.TryParse(Console.ReadLine(), out opcion))
             {
-                opcion = LeerOpcionMenu();
-
                 switch (opcion)
                 {
-                    case "1":
-                        Agregar();
+                    case 1:
+                        RegistrarGastoUI();
                         break;
-
-                    case "2":
-                        Listar();
+                    case 2:
+                        ListarGastosUI();
                         break;
-
-                    case "3":
-                        BuscarPorCategoria();
+                    case 3:
+                        VerTotalGastosUI();
                         break;
-
-                    case "4":
-                        Console.WriteLine("Saliendo...");
+                    case 4:
+                        Console.WriteLine("\nSaliendo del programa. ¡Mucho éxito con tu tarea!");
                         break;
-
                     default:
-                        Console.WriteLine("Opción no válida.");
+                        Console.WriteLine("\nOpción no válida. Presiona una tecla para continuar.");
+                        Console.ReadKey();
                         break;
                 }
-
-            } while (opcion != "4");
-        }
-
-        private static string LeerOpcionMenu()
-        {
-            Console.WriteLine("=== REGISTRO DE GASTOS ===");
-            Console.WriteLine("1. Agregar gasto");
-            Console.WriteLine("2. Listar gastos");
-            Console.WriteLine("3. Buscar por categoría");
-            Console.WriteLine("4. Salir");
-            Console.Write("Elige una opción: ");
-
-            return Console.ReadLine();
-        }
-
-        private static void Agregar()
-        {
-            Console.Write("Descripción: ");
-            string descripcion = Console.ReadLine();
-
-            Console.Write("Monto: ");
-            string montoTexto = Console.ReadLine();
-
-            Console.Write("Categoría: ");
-            string categoria = Console.ReadLine();
-
-            if (!decimal.TryParse(montoTexto, out decimal monto) ||
-                monto <= 0 ||
-                string.IsNullOrWhiteSpace(descripcion) ||
-                string.IsNullOrWhiteSpace(categoria))
+            }
+            else
             {
-                Console.WriteLine("Datos inválidos.");
-                return;
+                Console.WriteLine("\nPor favor, ingresa un número válido.");
+                Console.ReadKey();
             }
 
-            using (SqlConnection conexion = new SqlConnection(cadenaConexion))
-            {
-                conexion.Open();
+        } while (opcion != 4);
+    }
 
-                string consulta = "INSERT INTO Gastos (Descripcion, Monto, Categoria) VALUES (@Descripcion, @Monto, @Categoria)";
+    private static void RegistrarGastoUI()
+    {
+        Console.Clear();
+        Console.WriteLine("--- REGISTRAR NUEVO GASTO ---");
 
-                using (SqlCommand comando = new SqlCommand(consulta, conexion))
-                {
-                    comando.Parameters.AddWithValue("@Descripcion", descripcion.Trim());
-                    comando.Parameters.AddWithValue("@Monto", monto);
-                    comando.Parameters.AddWithValue("@Categoria", categoria.Trim());
+        Console.Write("Ingresa la descripción del gasto: ");
+        string desc = Console.ReadLine();
 
-                    comando.ExecuteNonQuery();
-                }
-            }
-
-            Console.WriteLine("Gasto agregado.");
-        }
-
-        private static void Listar()
+        Console.Write("Ingresa el monto (ej. 45.50): ");
+        if (decimal.TryParse(Console.ReadLine(), out decimal monto))
         {
-            decimal totalGeneral = 0;
-
-            using (SqlConnection conexion = new SqlConnection(cadenaConexion))
-            {
-                conexion.Open();
-
-                string consulta = "SELECT Id, Descripcion, Monto, Categoria FROM Gastos";
-
-                using (SqlCommand comando = new SqlCommand(consulta, conexion))
-                {
-                    using (SqlDataReader lector = comando.ExecuteReader())
-                    {
-                        while (lector.Read())
-                        {
-                            Console.WriteLine(
-                                lector["Id"] + " " +
-                                lector["Descripcion"] + " Q " +
-                                lector["Monto"] + " " +
-                                lector["Categoria"]);
-
-                            totalGeneral += Convert.ToDecimal(lector["Monto"]);
-                        }
-                    }
-                }
-            }
-
-            Console.WriteLine($"TOTAL GASTADO: Q {totalGeneral:N2}");
+          
+            Gasto nuevoGasto = new Gasto(contadorId++, desc, monto, DateTime.Now);
+            listaGastos.Add(nuevoGasto);
+            Console.WriteLine("\n[Éxito] ¡Gasto registrado correctamente!");
         }
-
-        private static void BuscarPorCategoria()
+        else
         {
-            Console.Write("Categoría a buscar: ");
-            string texto = Console.ReadLine();
+            Console.WriteLine("\n[Error] El monto ingresado no es válido.");
+        }
 
-            using (SqlConnection conexion = new SqlConnection(cadenaConexion))
+        Console.WriteLine("\nPresiona cualquier tecla para volver al menú...");
+        Console.ReadKey();
+    }
+
+    private static void ListarGastosUI()
+    {
+        Console.Clear();
+        Console.WriteLine("--- LISTADO DE GASTOS ---");
+
+        if (listaGastos.Count == 0)
+        {
+            Console.WriteLine("No hay gastos registrados todavía.");
+        }
+        else
+        {
+            foreach (var g in listaGastos)
             {
-                conexion.Open();
-
-                string consulta = "SELECT Id, Descripcion, Monto, Categoria FROM Gastos WHERE Categoria LIKE @Categoria";
-
-                using (SqlCommand comando = new SqlCommand(consulta, conexion))
-                {
-                    comando.Parameters.AddWithValue("@Categoria", "%" + texto + "%");
-
-                    using (SqlDataReader lector = comando.ExecuteReader())
-                    {
-                        bool encontrado = false;
-
-                        while (lector.Read())
-                        {
-                            Console.WriteLine(
-                                lector["Id"] + " " +
-                                lector["Descripcion"] + " Q " +
-                                lector["Monto"] + " " +
-                                lector["Categoria"]);
-
-                            encontrado = true;
-                        }
-
-                        if (!encontrado)
-                        {
-                            Console.WriteLine("Sin coincidencias.");
-                        }
-                    }
-                }
+                Console.WriteLine($"ID: {g.Id} | Descripción: {g.Descripcion} | Monto: Q{g.Monto:N2} | Fecha: {g.Fecha:yyyy-MM-dd HH:mm}");
             }
         }
+
+        Console.WriteLine("\nPresiona cualquier tecla para volver al menú...");
+        Console.ReadKey();
+    }
+
+    private static void VerTotalGastosUI()
+    {
+        Console.Clear();
+        Console.WriteLine("--- TOTAL DE GASTOS ---");
+
+        decimal total = 0;
+        foreach (var g in listaGastos)
+        {
+            total += g.Monto;
+        }
+
+        Console.WriteLine($"Has gastado un total de: Q{total:N2}");
+
+        Console.WriteLine("\nPresiona cualquier tecla para volver al menú...");
+        Console.ReadKey();
     }
 }
